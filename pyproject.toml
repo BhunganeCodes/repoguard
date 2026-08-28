@@ -1,10 +1,14 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "repoguard"
 version = "0.1.0"
 description = "Evidence-backed AI repository engineering assessment"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "RepoGuard Team" }
 ]
@@ -29,9 +33,13 @@ testpaths = ["tests"]
 pythonpath = ["app"]
 addopts = "-ra --strict-markers"
 
+[tool.setuptools.packages.find]
+where = ["app"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+src = ["app"]
 
 [tool.ruff.lint]
 select = [

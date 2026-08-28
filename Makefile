@@ -1,4 +1,4 @@
-.PHONY: install test lint format typecheck run docker-up docker-down
+.PHONY: install test lint format format-check typecheck run docker-up docker-down
 
 install:
 	python -m pip install --upgrade pip
@@ -12,6 +12,9 @@ lint:
 
 format:
 	ruff format .
+
+format-check:
+	ruff format --check .
 
 typecheck:
 	mypy app

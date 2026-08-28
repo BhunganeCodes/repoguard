@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 
 from repoguard.main import app
 
-
 client = TestClient(app)
 
 
