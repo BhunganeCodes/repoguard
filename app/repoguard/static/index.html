@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RepoGuard evaluates software engineering quality from repository evidence, not vibes.">
   <title>RepoGuard — Evidence-backed repository engineering assessment</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -10,18 +11,39 @@
   <header class="site-header">
     <div class="wrap header-inner">
       <span class="logo">RepoGuard</span>
-      <span class="tagline">Evidence-backed repository engineering assessment</span>
+      <span class="tagline">Evidence before opinion.</span>
       <span id="demoPill" class="pill hidden">DEMO</span>
     </div>
   </header>
 
   <main class="wrap">
-    <section id="assessForm" class="card">
-      <h1>Assess a repository</h1>
+    <section id="hero" class="hero" aria-labelledby="hero-title">
+      <h1 id="hero-title">Assess software engineering quality from evidence.</h1>
+      <p class="lede">
+        RepoGuard pins a repository snapshot, extracts verifiable evidence, and
+        evaluates it across five engineering dimensions — Architecture,
+        Testing, Maintainability, Dependencies, and Documentation — to produce
+        an auditable score. Evidence first, opinion second.
+      </p>
+      <div class="flow" aria-label="How RepoGuard works">
+        <span>Repository</span><i>→</i>
+        <span>Evidence</span><i>→</i>
+        <span>Assessment</span><i>→</i>
+        <span>Score</span><i>→</i>
+        <span>Findings</span><i>→</i>
+        <span>Audit trail</span>
+      </div>
+      <div class="cta-row">
+        <button id="hero-demo" class="cta cta-primary" type="button">Try Demo</button>
+        <button id="hero-live" class="cta cta-secondary" type="button">Live Assessment</button>
+      </div>
+    </section>
+
+    <section id="assessForm" class="card hidden">
+      <h2>Repository assessment</h2>
       <p class="muted">
-        A snapshot is pinned, evidence is extracted and verified, and RepoGuard
-        produces an evidence-first assessment across the five engineering
-        dimensions.
+        Pick Demo for a fully deterministic, key-free walkthrough, or run a
+        live assessment against a real repository snapshot and model.
       </p>
       <form id="assess-form">
         <label for="repository_url">Repository URL</label>

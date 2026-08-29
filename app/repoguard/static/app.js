@@ -3,6 +3,7 @@
 
   var LIFECYCLE = ["queued", "snapshotting", "extracting", "assessing", "scoring"];
   var STAGE_ORDER = ["load", "plan", "assess", "cross_check", "finalize"];
+  var DEMO_URL = "https://github.com/example/demo-synthetic-repo";
   var DIM_LABELS = {
     architecture: "Architecture",
     testing: "Testing",
@@ -290,6 +291,21 @@
 
   /* ---------- form wiring ---------- */
 
+  function runDemo() {
+    urlInput.value = DEMO_URL;
+    commitInput.value = "";
+    modeSelect.value = "demo";
+    form.requestSubmit();
+  }
+
+  function startLive() {
+    present("live");
+    show(formSection);
+    modeSelect.value = "live";
+    urlInput.focus();
+    formSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   form.addEventListener("submit", function (event) {
     event.preventDefault();
     submitBtn.disabled = true;
@@ -301,10 +317,7 @@
     submit(payload).then(function () { submitBtn.disabled = false; });
   });
 
-  document.getElementById("demo-btn").addEventListener("click", function () {
-    urlInput.value = "https://github.com/example/demo-synthetic-repo";
-    commitInput.value = "";
-    modeSelect.value = "demo";
-    form.requestSubmit();
-  });
+  document.getElementById("hero-demo").addEventListener("click", runDemo);
+  document.getElementById("hero-live").addEventListener("click", startLive);
+  document.getElementById("demo-btn").addEventListener("click", runDemo);
 })();
