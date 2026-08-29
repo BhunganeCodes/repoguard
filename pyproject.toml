@@ -1,10 +1,14 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "repoguard"
 version = "0.1.0"
 description = "Evidence-backed AI repository engineering assessment"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "RepoGuard Team" }
 ]
@@ -13,7 +17,8 @@ dependencies = [
     "fastapi>=0.115,<1.0",
     "uvicorn[standard]>=0.34,<1.0",
     "pydantic>=2.10,<3.0",
-    "pydantic-settings>=2.7,<3.0"
+    "pydantic-settings>=2.7,<3.0",
+    "pyyaml>=6.0,<7.0"
 ]
 
 [project.optional-dependencies]
@@ -21,17 +26,25 @@ dev = [
     "pytest>=8.3,<9.0",
     "pytest-cov>=6.0,<7.0",
     "ruff>=0.9,<1.0",
-    "mypy>=1.14,<2.0"
+    "mypy>=1.14,<2.0",
+    "types-PyYAML>=6.0,<7.0"
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["app"]
+pythonpath = ["app", "."]
 addopts = "-ra --strict-markers"
+
+[tool.setuptools.packages.find]
+where = ["app"]
+
+[tool.setuptools.package-data]
+repoguard = ["static/*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+src = ["app", "."]
 
 [tool.ruff.lint]
 select = [
@@ -41,6 +54,15 @@ select = [
     "B",
     "UP"
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# The baseline prompt is a static, versioned text artifact. Its physical
+# lines are the rendered prompt; rewrapping them would change the artifact.
+"evaluation/baseline/prompt.py" = ["E501"]
+# RepoGuard's prompt is likewise a static, versioned text artifact: the
+# system prompt, rubric transcriptions, and output template are the rendered
+# prompt; rewrapping their physical lines would change the artifact.
+"evaluation/repoguard/prompts.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

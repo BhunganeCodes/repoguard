@@ -1,0 +1,278 @@
+# RepoGuard Evaluation Candidate Registry
+#
+# Candidate repositories only. NOT the official evaluation dataset.
+#
+# See evaluation/candidates/README.md for the entry schema and statuses.
+#
+# Allowed screening_status values:
+#   screening | eligible | rejected | shortlisted
+#
+# Metadata conventions:
+#   license       SPDX id, verified via the GitHub REST API and/or a
+#                 shallow metadata clone.
+#                 null  = GitHub API reports no detected license file.
+#                 pending = could not be verified.
+#                 A license observed only in repository metadata (for
+#                 example README) is recorded here and flagged in the
+#                 screening concerns for human confirmation.
+#   size_category small (< 2 MB) | medium (2-20 MB) | large (> 20 MB),
+#                 derived from the GitHub-reported repository size.
+#                 pending = could not be verified.
+#   discovery / rationale  pending until the engineering team's notes
+#                 are recorded.
+#
+# Screening evidence recorded under `screening:` per candidate.
+# head_commit is the HEAD of the repository's default branch at the
+# screening date; it is a snapshot candidate, not an official case.
+#
+# Metadata verified via the GitHub REST API and shallow metadata clones
+# (git clone --depth 1 --filter=blob:none) on 2026-08-28.
+
+schema_version: 1
+
+statuses:
+  - screening
+  - eligible
+  - rejected
+  - shortlisted
+
+candidates:
+  - id: C001
+    name: gosim
+    url: https://github.com/jellevandenhooff/gosim
+    ecosystem: Go
+    license: MIT
+    size_category: small
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: ffd3a613542675755e4cbf8186b5edaf404ed95c
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; MIT license; Go; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: none
+
+  - id: C002
+    name: testify
+    url: https://github.com/stretchr/testify
+    ecosystem: Go
+    license: MIT
+    size_category: medium
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: 9f9d4f4cd868b1667991148401d30a012470b9c9
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; MIT license; Go library; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: none
+
+  - id: C003
+    name: goss
+    url: https://github.com/goss-org/goss
+    ecosystem: Go
+    license: Apache-2.0
+    size_category: small
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: c298b098fff258b181a15e3fe9b29cbe85a7846b
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; Apache-2.0; Go; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: none
+
+  - id: C004
+    name: godel
+    url: https://github.com/palantir/godel
+    ecosystem: Go
+    license: Apache-2.0
+    size_category: large
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: 2934c409a7dd27597d808a916a1f7aec5b02cd52
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; Apache-2.0; Go build system; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: Large surface (about 1.4k tracked files); reviewer load is heavy; revisit sampling at shortlisting.
+
+  - id: C005
+    name: tox
+    url: https://github.com/tox-dev/tox
+    ecosystem: Python
+    license: MIT
+    size_category: medium
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: c1af92967f5f84a4ddaeebad6695c2600db39d0c
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: absent
+      ci: present
+      decision: Accessible; MIT license; Python; source, tests, docs, manifest, and CI present; pinable commit recorded.
+      concerns: No committed lockfile; version-management signal to assess in the review phase.
+
+  - id: C006
+    name: fastapi-realworld-example-app
+    url: https://github.com/DataDog/fastapi-realworld-example-app
+    ecosystem: Python
+    license: MIT
+    size_category: small
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: a31ab8ea594551b783cb17e53ed46a38bf7bb923
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; MIT license; Python; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: none
+
+  - id: C007
+    name: TypeScript
+    url: https://github.com/microsoft/TypeScript
+    ecosystem: TypeScript
+    license: Apache-2.0
+    size_category: large
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: 8d8bdf91714dc3a3377a47d21ea1154ec8213dcc
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; Apache-2.0; TypeScript; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: Very large surface (about 66k tracked files); requires sampling; heavy reviewer load; human shortlisting decision.
+
+  - id: C008
+    name: typescript-algorithms-data-structures
+    url: https://github.com/itkrivoshei/typescript-algorithms-data-structures
+    ecosystem: TypeScript
+    license: MIT
+    size_category: small
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: 994c5e388ae4aa3f5e1280462cd6451995759ea3
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; MIT license; TypeScript; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded. Not rejected for being archived.
+      concerns: Archived on GitHub; small and tractable; suitability for the benchmark is unchanged by archive status since commits are pinned; human shortlisting decision.
+
+  - id: C009
+    name: truelicense
+    url: https://github.com/christian-schlichtherle/truelicense
+    ecosystem: Java
+    license: Apache-2.0
+    size_category: medium
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: 697ff984597cdd3e1e0991e91706ee813da89ec0
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: absent
+      ci: present
+      decision: Accessible; Apache-2.0; Java; source, tests, docs, manifest, and CI present; pinable commit recorded.
+      concerns: No lockfile (Maven resolves at build); version-management signal to assess in the review phase.
+
+  - id: C010
+    name: git2-rs
+    url: https://github.com/rust-lang/git2-rs
+    ecosystem: Rust
+    license: Apache-2.0
+    size_category: medium
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: da6c126f7733329d82748e710266af1c61591bdd
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; Apache-2.0; Rust; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: none
+
+  - id: C011
+    name: crater
+    url: https://github.com/rust-lang/crater
+    ecosystem: Rust
+    license: MIT OR Apache-2.0 # repo-declared in README; GitHub detects no LICENSE file
+    size_category: medium
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: 5535ea1456097b1669a0df75ec6245fcb7b4dd0a
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: present
+      ci: present
+      decision: Accessible; license declared in README as MIT and Apache-2.0; Rust; source, tests, docs, manifest, lockfile, and CI present; pinable commit recorded.
+      concerns: No LICENSE file present; GitHub license detector returns null; license is repo-declared only; human confirmation recommended.
+
+  - id: C012
+    name: expect-test
+    url: https://github.com/rust-analyzer/expect-test
+    ecosystem: Rust
+    license: Apache-2.0
+    size_category: small
+    discovery: pending
+    rationale: pending
+    screening_status: eligible
+    screening:
+      head_commit: 9e616f9e8e94cd80b0f09155b7d9b4c57e133dbc
+      source: present
+      tests: present
+      documentation: present
+      dependency_manifests: present
+      lockfiles: absent
+      ci: present
+      decision: Accessible; Apache-2.0; Rust library crate; source, tests, docs, manifest, and CI present; pinable commit recorded.
+      concerns: No Cargo.lock (library crate); dependency-pinning signal to assess in the review phase.

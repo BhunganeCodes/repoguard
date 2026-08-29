@@ -10,3 +10,4 @@ services:
       LOG_LEVEL: INFO
     volumes:
       - ./app:/app/app
+      - ./data:/app/data

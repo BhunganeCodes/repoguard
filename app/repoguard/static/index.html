@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RepoGuard evaluates software engineering quality from repository evidence, not vibes.">
+  <title>RepoGuard — Evidence-backed repository engineering assessment</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <span class="logo">RepoGuard</span>
+      <span class="tagline">Evidence before opinion.</span>
+      <span id="demoPill" class="pill hidden">DEMO</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="hero" class="hero" aria-labelledby="hero-title">
+      <h1 id="hero-title">Assess software engineering quality from evidence.</h1>
+      <p class="lede">
+        RepoGuard pins a repository snapshot, extracts verifiable evidence, and
+        evaluates it across five engineering dimensions — Architecture,
+        Testing, Maintainability, Dependencies, and Documentation — to produce
+        an auditable score. Evidence first, opinion second.
+      </p>
+      <div class="flow" aria-label="How RepoGuard works">
+        <span>Repository</span><i>→</i>
+        <span>Evidence</span><i>→</i>
+        <span>Assessment</span><i>→</i>
+        <span>Score</span><i>→</i>
+        <span>Findings</span><i>→</i>
+        <span>Audit trail</span>
+      </div>
+      <div class="cta-row">
+        <button id="hero-demo" class="cta cta-primary" type="button">Try Demo</button>
+        <button id="hero-live" class="cta cta-secondary" type="button">Live Assessment</button>
+      </div>
+    </section>
+
+    <section id="assessForm" class="card hidden">
+      <h2>Repository assessment</h2>
+      <p class="muted">
+        Pick Demo for a fully deterministic, key-free walkthrough, or run a
+        live assessment against a real repository snapshot and model.
+      </p>
+      <form id="assess-form">
+        <label for="repository_url">Repository URL</label>
+        <input id="repository_url" type="url" name="repository_url" required
+               placeholder="https://github.com/org/repository" autocomplete="off">
+
+        <div class="grid-2">
+          <div>
+            <label for="commit">Commit (optional — default branch is pinned)</label>
+            <input id="commit" type="text" name="commit" placeholder="40-character commit SHA"
+                   autocomplete="off" spellcheck="false">
+          </div>
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode" name="mode">
+              <option value="demo">Demo (synthetic, deterministic)</option>
+              <option value="live">Live (real snapshot + model)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="submit-btn" type="submit">Assess</button>
+          <button id="demo-btn" type="button" class="secondary">Try the demo</button>
+        </div>
+      </form>
+      <div id="form-error" class="error hidden"></div>
+    </section>
+
+    <section id="progress" class="card hidden" aria-labelledby="progress-title">
+      <h2 id="progress-title">Assessment in progress</h2>
+      <p class="muted progress-repo" id="progress-repo"></p>
+      <div class="running">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Running the assessment pipeline — the request continues through repository
+          snapshot, evidence extraction, assessment and scoring before completing.</span>
+      </div>
+      <p class="muted progress-hint" id="progress-hint"></p>
+      <ol id="lifecycle" class="lifecycle" aria-label="Assessment pipeline phases">
+        <li>Repository</li>
+        <li>Evidence</li>
+        <li>Assessment</li>
+        <li>Score</li>
+      </ol>
+    </section>
+
+    <section id="result" class="hidden">
+      <div id="result-body"></div>
+      <div class="result-actions">
+        <button id="new-assessment-result" class="secondary" type="button">Run another assessment</button>
+      </div>
+    </section>
+
+    <section id="failure" class="hidden">
+      <div id="failure-body"></div>
+      <div class="result-actions">
+        <button id="new-assessment-failure" class="secondary" type="button">Run another assessment</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="sr-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
