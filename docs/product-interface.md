@@ -201,6 +201,47 @@ ASSESSMENT in the UI payload and is never presented as a real repository
 assessment, and it lives only in the runtime store — never in the evaluation
 dataset, ground truth, or benchmark surface.
 
+## Hackathon Demo / Reproducibility
+
+The Demo validates product functionality and reproducibility. It is **not
+benchmark evidence**.
+
+1. **Start RepoGuard.** From the repo root: `.\scripts\run.ps1` on Windows
+   (or `./scripts/run.sh`), which prefers Docker Compose and falls back to the
+   local virtual environment. Alternatively run
+   `python -m uvicorn repoguard.main:app --port 8000` directly, or with
+   Docker: `docker compose up --build` (or
+   `docker run -p 8000:8000 repoguard`). Use an alternate host port if 8000
+   is taken.
+2. **Open the UI** at `http://127.0.0.1:8000`.
+3. **Select Demo** in the assessment mode selector and submit. Any repository
+   URL is accepted; Demo is synthetic and ignores the repository content.
+4. **Demo requires no API key.** No key, token, or credential of any kind is
+   needed.
+5. **Demo does not require an external LLM.** It runs RepoGuard's real,
+   unmodified pipeline (plan → assess → cross-check → finalize, including all
+   fail-closed validation and scoring) against a synthetic evidence artifact
+   and the framework's deterministic `MockProvider`. It needs **no network
+   access** (verified in a container with `--network none`).
+6. **Expected behavior:** the assessment returns `201`, `status: succeeded`,
+   the UI shows a DEMO ASSESSMENT scorecard at `63.0 / 100`, and the full
+   Evidence and Audit trail are available.
+7. **Verify the result:** repeated submissions produce the **same** score and
+   the **same canonical `repoguard-v1:<sha256>` result identity** (runtime
+   metadata is excluded from identity). Confirm via the returned
+   `assessment_id`, `GET /api/assess/{id}`, `GET /api/assess/{id}/evidence`,
+   `GET /api/assess/{id}/report`, or the `.../download` endpoint (raw
+   canonical YAML).
+8. **Live mode differs:** `mode=live` snapshots and extracts the **real**
+   repository, then calls the configured provider. It **requires**
+   `REPOGUARD_LLM_PROVIDER` + credentials + network, and can take minutes.
+   Absent provider configuration is a controlled `400 provider_unavailable`
+   (never a silent fallback to Demo). Ambient provider environment variables
+   on the host do **not** affect Demo mode.
+9. **Docker.** The image includes the UI and the full engine but no example
+   data or secrets. Run the container with no environment variables and verify
+   health, a repeated Demo, and identical identities as above.
+
 ## Live mode
 
 `mode=live`:
