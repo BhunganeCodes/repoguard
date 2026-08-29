@@ -102,6 +102,12 @@ Response (abridged):
 }
 ```
 
+Failures are reported honestly through the shape described under
+[Error handling](#error-handling): client problems return `400`, acquisition/
+snapshot/evidence problems return `502`, and model problems return `201` with a
+persisted `failed` result (`scoring: null`) — never a `500`, never a traceback,
+never a guess.
+
 ### `GET /api/assess/{assessment_id}`
 
 Fetch a persisted assessment by its content identity. The id may be the full
@@ -116,6 +122,13 @@ provenance).
 
 The canonical result artifact: assessment, scoring, workflow trace, and audit
 metadata.
+
+### `GET /api/assess/{assessment_id}/download`
+
+Downloads the canonical assessment artifact **exactly as persisted** — the
+stored YAML bytes, served unchanged with `Content-Disposition: attachment`
+(the framework's serialization already masks secrets). Nothing is re-composed
+on the way out.
 
 ## Lifecycle
 
@@ -133,9 +146,11 @@ and inspectable**: every result embeds the real workflow trace
 | `scoring` | canonical scoring over the 25 rubric criteria |
 | `completed` / `failed` | result persisted; `failed` carries an `error.kind` and details and **never** a score |
 
-The UI animates these stages while a request is in flight and then renders the
-recorded `process.stages` trace (each annotated `ok`/`failed`), so a partial or
-failed run is always displayed as such.
+The UI shows an indeterminate, non-fabricated running indicator while a
+request is in flight (the interface is synchronous, so no fake stage
+progress is animated) and then always renders the recorded `process.stages`
+trace (each annotated `ok`/`failed`), so a partial or failed run is displayed
+as such.
 
 ## Results presentation
 
@@ -147,13 +162,23 @@ The UI renders only already-computed data:
   `assessment.dimensions`.
 * **Findings** grouped by dimension: criterion id, canonical status
   (`FOUND` / `NOT_FOUND` / `UNCERTAIN` / `NOT_APPLICABLE`), integer score,
-  citations, and any `uncertainty_reason` / `justification`.
-* **Evidence** table: evidence id, category, status, source paths, and the raw
-  observation.
-* **Audit & provenance**: repository URL, requested/verified commit, snapshot
-  content hash, evidence identity, rubric version, assessment identity, result
-  identity, RepoGuard/prompt versions, model/provider, and runtime facts
-  (timestamp, latency).
+  citations, and any `uncertainty_reason` / `justification`. Findings stay the
+  primary content; the finding-to-evidence copy notes that each finding links to
+  its extracted evidence.
+* **Evidence** and **Audit trail** are collapsible technical sections,
+  collapsed by default so they never crowd the scorecard. The evidence table
+  shows evidence id, category, status, source paths, and the raw observation;
+  each row carries an `id` anchor. The audit trail exposes only canonical
+  metadata: case id, repository, requested/verified commit, snapshot content
+  hash, evidence identity, rubric version, assessment identity, result identity,
+  RepoGuard/prompt versions, model/provider, runtime facts (timestamp, latency),
+  and the recorded workflow trace.
+* **Finding → evidence navigation**: clicking a citation opens the evidence
+  section (if collapsed), scrolls to the cited row, and gives it a non-color-only
+  target treatment (outline + inset bar) plus keyboard/screen-reader focus.
+* **Audit download**: the Audit trail section links to the
+  `GET .../download` endpoint above, making the canonical artifact easy to
+  save without ever rendering secrets.
 
 There is **no scoring logic in JavaScript**; the frontend merely lays out the
 authoritative DTOs.
@@ -196,6 +221,49 @@ invalid_assessment | incomplete_assessment` — the same fail-closed behavior as
 the evaluation suite. Expect manually-configured provider latency; the model
 call is the dominant cost.
 
+Provider/model resolution mirrors the CLI exactly: an HTTP provider
+(`REPOGUARD_LLM_PROVIDER`) uses `REPOGUARD_LLM_MODEL` (falling back to `mock`
+as the CLI does); any other provider resolves to `mock`. Live mode never
+implicitly falls back to `MockProvider`: an unset `REPOGUARD_LLM_PROVIDER` is a
+controlled product error, not a silently mocked assessment.
+
+## Error handling
+
+Client-visible failures share one structured shape (FastAPI `detail`):
+
+```json
+{
+  "error": "repository_invalid",
+  "message": "That commit does not exist in the repository.",
+  "details": []
+}
+```
+
+The `error` code is stable and machine-readable so the UI can classify a
+failure without parsing prose. The `message` is stable, human copy — never a
+Python traceback, filesystem path, or git stderr dump.
+
+| code | HTTP | meaning |
+| --- | --- | --- |
+| `repository_invalid` | 400 | URL/commit input is invalid, unsupported, or the pinned commit does not exist |
+| `repository_unavailable` | 502 | commit resolution or snapshot acquisition could not reach the repository |
+| `snapshot_error` | 502 | the snapshot could not be recorded (cannot be completed by editing inputs) |
+| `evidence_error` | 502 | evidence extraction failed after a successful snapshot |
+| `provider_unavailable` | 400 | Live Assessment is not configured (no `REPOGUARD_LLM_PROVIDER`) or the provider cannot be built |
+| `internal_error` | 500 | last-resort guard: an unexpected exception was logged and turned into a JSON body without a traceback |
+
+Provider/model failures during a run are **not** HTTP errors: the request
+succeeds (201) and returns a persisted `failed` result artifact with
+`result.error.kind` plus `scoring: null` — a failed run never produces a score.
+
+The static UI renders these failures with human-readable primary copy (e.g.
+"RepoGuard couldn't access that repository or commit. Check the URL and commit
+SHA and try again. No score was produced."). Raw evaluation kind strings and
+details stay available only inside a collapsed "Technical details" surface, and
+provider failures offer a **Try Demo** button that runs the genuine Demo flow.
+RepoGuard never renders a score for a failed run, and error bodies are
+guaranteed free of credentials and key material (asserted by tests).
+
 ## Storage, identity, and reproducibility
 
 * Runtime outputs live under `data/` (configurable with `REPOGUARD_DATA_DIR`),
@@ -217,6 +285,9 @@ call is the dominant cost.
 * Provider API keys are never serialized or returned: all artifacts go through
   the framework's `sanitize_config`/`mask_secrets` machinery, and the UI
   displays only model/provider name and (non-secret) base URL.
+* Error responses (controlled 400/502 and the last-resort 500) never include
+  tracebacks, filesystem paths, keys, or `Authorization` headers; tests assert
+  no secret material appears in any error body.
 * No credentials, `.env` files, or `data/` content are committed or shipped in
   the image.
 

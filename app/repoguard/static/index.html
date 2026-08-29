@@ -73,22 +73,39 @@
       <div id="form-error" class="error hidden"></div>
     </section>
 
-    <section id="progress" class="card hidden">
-      <h2>Assessment in progress</h2>
-      <p class="muted" id="progress-note">Running the assessment pipeline…</p>
-      <ol id="lifecycle" class="lifecycle">
-        <li>queued</li>
-        <li>snapshotting</li>
-        <li>extracting</li>
-        <li>assessing</li>
-        <li>scoring</li>
-        <li>completed / failed</li>
+    <section id="progress" class="card hidden" aria-labelledby="progress-title">
+      <h2 id="progress-title">Assessment in progress</h2>
+      <p class="muted progress-repo" id="progress-repo"></p>
+      <div class="running">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Running the assessment pipeline — the request continues through repository
+          snapshot, evidence extraction, assessment and scoring before completing.</span>
+      </div>
+      <p class="muted progress-hint" id="progress-hint"></p>
+      <ol id="lifecycle" class="lifecycle" aria-label="Assessment pipeline phases">
+        <li>Repository</li>
+        <li>Evidence</li>
+        <li>Assessment</li>
+        <li>Score</li>
       </ol>
     </section>
 
-    <section id="result" class="hidden"></section>
-    <section id="failure" class="hidden"></section>
+    <section id="result" class="hidden">
+      <div id="result-body"></div>
+      <div class="result-actions">
+        <button id="new-assessment-result" class="secondary" type="button">Run another assessment</button>
+      </div>
+    </section>
+
+    <section id="failure" class="hidden">
+      <div id="failure-body"></div>
+      <div class="result-actions">
+        <button id="new-assessment-failure" class="secondary" type="button">Run another assessment</button>
+      </div>
+    </section>
   </main>
+
+  <div id="sr-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <script src="/app.js" defer></script>
 </body>

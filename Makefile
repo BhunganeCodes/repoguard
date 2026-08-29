@@ -17,7 +17,7 @@ format-check:
 	ruff format --check .
 
 typecheck:
-	mypy app
+	mypy app evaluation
 
 run:
 	python -m uvicorn repoguard.main:app --reload

@@ -1,0 +1,184 @@
+# RepoGuard Evaluation Dataset Manifest — v1.0.0
+#
+# Immutable dataset-freeze artifact. Do not edit.
+# A change to the frozen evaluation set requires a new dataset version and
+# a fresh manifest, per docs/evaluation.md (dataset locking).
+#
+# This artifact is FROZEN at the INCLUSION layer only. It performs no
+# quality assessment, records no quality tiers/scores, and contains no
+# ground truth. Those are separate, later phases named below.
+
+schema_version: 1
+dataset:
+  name: repoguard-evaluation-dataset
+  version: 1.0.0
+  creation_date: 2026-08-28
+  status: frozen
+  source_registry: evaluation/candidates/registry.yaml
+  protocol: docs/evaluation.md
+  freeze_decision: engineering team human decisions recorded for Issue #9
+
+# The three layers this manifest must keep distinct:
+phases:
+  candidate_screening: completed   # Issue #8: mechanical eligibility; all 12 candidates eligible
+  dataset_inclusion: completed     # Issue #9: human KEEP/DROP decisions recorded below
+  quality_assessment: not_started  # Out of scope for this artifact; no tiers, scores, or ground truth here
+
+counts:
+  candidates_screened_eligible: 12
+  included: 11        # 10 license-confirmed + 1 pending license confirmation (C011)
+  included_confirmed: 10
+  included_pending_license_confirmation: 1
+  excluded: 1
+
+candidates:
+  - candidate_id: C001
+    name: gosim
+    url: https://github.com/jellevandenhooff/gosim
+    pinned_commit: ffd3a613542675755e4cbf8186b5edaf404ed95c
+    ecosystem: Go
+    license: MIT
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C002
+    name: testify
+    url: https://github.com/stretchr/testify
+    pinned_commit: 9f9d4f4cd868b1667991148401d30a012470b9c9
+    ecosystem: Go
+    license: MIT
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C003
+    name: goss
+    url: https://github.com/goss-org/goss
+    pinned_commit: c298b098fff258b181a15e3fe9b29cbe85a7846b
+    ecosystem: Go
+    license: Apache-2.0
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C004
+    name: godel
+    url: https://github.com/palantir/godel
+    pinned_commit: 2934c409a7dd27597d808a916a1f7aec5b02cd52
+    ecosystem: Go
+    license: Apache-2.0
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C005
+    name: tox
+    url: https://github.com/tox-dev/tox
+    pinned_commit: c1af92967f5f84a4ddaeebad6695c2600db39d0c
+    ecosystem: Python
+    license: MIT
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C006
+    name: fastapi-realworld-example-app
+    url: https://github.com/DataDog/fastapi-realworld-example-app
+    pinned_commit: a31ab8ea594551b783cb17e53ed46a38bf7bb923
+    ecosystem: Python
+    license: MIT
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C007
+    name: TypeScript
+    url: https://github.com/microsoft/TypeScript
+    pinned_commit: 8d8bdf91714dc3a3377a47d21ea1154ec8213dcc
+    ecosystem: TypeScript
+    license: Apache-2.0
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: exclude
+    dataset_status: excluded
+    exclusion_rationale: >-
+      Excluded by the Issue #9 human dataset decision despite mechanical
+      eligibility at screening. Engineering surface is very large (about
+      66k tracked files), making manual ground-truth review impractical
+      within the hackathon scope; heavy reviewer load flagged at screening.
+
+  - candidate_id: C008
+    name: typescript-algorithms-data-structures
+    url: https://github.com/itkrivoshei/typescript-algorithms-data-structures
+    pinned_commit: 994c5e388ae4aa3f5e1280462cd6451995759ea3
+    ecosystem: TypeScript
+    license: MIT
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+    notes: Repository is archived on GitHub; retained because commits are pinned and the size is tractable.
+
+  - candidate_id: C009
+    name: truelicense
+    url: https://github.com/christian-schlichtherle/truelicense
+    pinned_commit: 697ff984597cdd3e1e0991e91706ee813da89ec0
+    ecosystem: Java
+    license: Apache-2.0
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C010
+    name: git2-rs
+    url: https://github.com/rust-lang/git2-rs
+    pinned_commit: da6c126f7733329d82748e710266af1c61591bdd
+    ecosystem: Rust
+    license: Apache-2.0
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+  - candidate_id: C011
+    name: crater
+    url: https://github.com/rust-lang/crater
+    pinned_commit: 5535ea1456097b1669a0df75ec6245fcb7b4dd0a
+    ecosystem: Rust
+    license: MIT OR Apache-2.0
+    license_basis: repo-declared   # declared in the repository README; no LICENSE file present; GitHub detector returns null
+    license_confirmation: pending  # docs/evaluation.md 4.9 requires confirmed license compatibility before running as an official case
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: pending_license_confirmation
+    notes: >-
+      Included provisionally subject to confirmation of the repository-declared
+      legal basis. Treat as pending (not confirmed): evidence preserved as
+      recorded, no additional licensing information invented. Must be resolved
+      to confirmed before this candidate runs as an official evaluation case.
+
+  - candidate_id: C012
+    name: expect-test
+    url: https://github.com/rust-analyzer/expect-test
+    pinned_commit: 9e616f9e8e94cd80b0f09155b7d9b4c57e133dbc
+    ecosystem: Rust
+    license: Apache-2.0
+    license_basis: verified
+    screening_decision: eligible
+    dataset_decision: include
+    dataset_status: confirmed
+
+# Quality assessment is intentionally absent from this artifact:
+# - no quality tiers (e.g. strong/average/weak/challenging)
+# - no quality scores
+# - no reviewer or system scores
+# - no ground truth
+# Any of these appearing here indicates corruption of the freeze.

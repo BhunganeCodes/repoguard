@@ -14,7 +14,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from evaluation.baseline.provider import MockProvider
+from evaluation.baseline.errors import ProviderError
+from evaluation.baseline.provider import LLMResponse, MockProvider
 from evaluation.scoring.rubric import CRITERIA, DIMENSIONS
 from repoguard.main import app
 from repoguard.services import executor, store
@@ -98,6 +99,40 @@ def test_assess_lookup_endpoints_round_trip(client: TestClient) -> None:
 
     digest = assessment_id.split(":", 1)[1]
     assert client.get(f"/api/assess/{digest}").status_code == 200
+
+
+def test_download_endpoint_returns_the_exact_canonical_artifact(
+    client: TestClient,
+) -> None:
+    _, body = _post_assess(client)
+    assessment_id = body["assessment_id"]
+    digest = assessment_id.split(":", 1)[1]
+    import yaml
+
+    expected = store.load_yaml(store.result_path(digest))
+
+    response = client.get(f"/api/assess/{assessment_id}/download")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/x-yaml")
+    disposition = response.headers["content-disposition"]
+    assert disposition == f'attachment; filename="{digest}.yaml"'
+
+    downloaded = yaml.safe_load(response.content)
+    assert downloaded == expected
+    assert downloaded["result_identity"] == assessment_id
+
+    text = response.text
+    for _, value in FAKE_KEYS.items():
+        assert value not in text
+
+
+def test_download_endpoint_404_for_unknown_assessment(client: TestClient) -> None:
+    assert (
+        client.get(
+            "/api/assess/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/download"
+        ).status_code
+        == 404
+    )
 
 
 def test_unknown_or_malformed_assessment_ids_are_404(client: TestClient) -> None:
@@ -268,3 +303,177 @@ def test_live_assessment_wires_snapshot_and_records_failures(
     report = client.get(f"/api/assess/{body['assessment_id']}/report")
     assert report.status_code == 200
     assert report.json()["report"]["result_identity"] == body["assessment_id"]
+
+
+class _CapturingProvider:
+    """Records every LLMRequest and answers with a staged valid success."""
+
+    name = "openai-compatible"
+
+    def __init__(self, response_text: str) -> None:
+        self._response_text = response_text
+        self.requests: list = []
+
+    def generate(self, request):
+        self.requests.append(request)
+        return LLMResponse(
+            text=self._response_text,
+            model=request.model,
+            input_tokens=4,
+            output_tokens=2,
+        )
+
+    def public_config(self) -> dict[str, object]:
+        return {"mode": self.name}
+
+
+def _live_url_commit(git_repo: dict[str, object]) -> tuple[str, str]:
+    return Path(git_repo["path"]).as_uri(), str(git_repo["first"])
+
+
+def test_live_uses_configured_env_model_for_the_request(
+    git_repo: dict[str, object], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The configured environment model must reach the provider request.
+
+    Mirrors the CLI's model resolution: the product executor derives the
+    ``EvaluatorConfig.model`` from ``REPOGUARD_LLM_MODEL`` for HTTP providers,
+    and ``run_case`` sends it as ``LLMRequest.model``.
+    """
+    monkeypatch.setenv(store.ENV_DATA_DIR, str(tmp_path / "data"))
+    monkeypatch.setenv("REPOGUARD_LLM_PROVIDER", "openai-compatible")
+    monkeypatch.setenv("REPOGUARD_LLM_MODEL", "configured-model-42")
+    url, commit = _live_url_commit(git_repo)
+
+    failed = executor.run_assessment(
+        repository_url=url,
+        commit=commit,
+        mode="live",
+        provider=MockProvider(response_text=""),
+    )
+    assert failed.result["status"] == "failed"
+
+    capturing = _CapturingProvider(_staged_response_for(failed.evidence["items"]))
+    outcome = executor.run_assessment(
+        repository_url=url,
+        commit=commit,
+        mode="live",
+        provider=capturing,
+    )
+    assert outcome.result["status"] == "succeeded"
+    assert capturing.requests, "provider.generate was never called"
+    assert capturing.requests[0].model == "configured-model-42"
+    assert outcome.result["provider"]["model"] == "configured-model-42"
+
+    model_config = outcome.result["provider"]["config"]
+    assert model_config["mode"] == "openai-compatible"
+    assert model_config["timeout_s"] == 60.0
+
+
+def test_live_without_configured_provider_is_controlled_error(
+    git_repo: dict[str, object], client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unset REPOGUARD_LLM_PROVIDER must never imply MockProvider for Live."""
+    monkeypatch.setenv(store.ENV_DATA_DIR, str(tmp_path / "data"))
+    monkeypatch.delenv("REPOGUARD_LLM_PROVIDER", raising=False)
+    url, commit = _live_url_commit(git_repo)
+
+    response = client.post(
+        "/api/assess", json={"repository_url": url, "commit": commit, "mode": "live"}
+    )
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert detail["error"] == "provider_unavailable"
+    assert "not configured" in detail["message"]
+
+    with pytest.raises(executor.AssessmentInputError) as err_info:
+        executor.run_assessment(repository_url=url, commit=commit, mode="live")
+    assert err_info.value.code == "provider_unavailable"
+
+
+def test_unresolvable_repository_is_controlled_error_not_500(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A repository the remote cannot reach yields a controlled error, no 500."""
+    monkeypatch.setenv(store.ENV_DATA_DIR, str(tmp_path / "data"))
+    missing = (tmp_path / "no-such-repository").as_uri()
+
+    response = client.post("/api/assess", json={"repository_url": missing, "mode": "live"})
+    assert response.status_code == 502
+    detail = response.json()["detail"]
+    assert detail["error"] == "repository_unavailable"
+    assert "traceback" not in response.text.lower()
+    assert str(tmp_path) not in response.text
+
+
+def test_acquisition_of_a_commit_that_does_not_exist_is_controlled(
+    git_repo: dict[str, object], client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A valid-but-missing commit must classify as user/unavailable, never 500."""
+    monkeypatch.setenv(store.ENV_DATA_DIR, str(tmp_path / "data"))
+    url, _ = _live_url_commit(git_repo)
+    missing_commit = "0" * 40
+
+    response = client.post(
+        "/api/assess",
+        json={"repository_url": url, "commit": missing_commit, "mode": "live"},
+    )
+    assert response.status_code in (400, 502)
+    detail = response.json()["detail"]
+    assert detail["error"] in ("repository_invalid", "repository_unavailable")
+    assert "traceback" not in response.text.lower()
+
+
+def test_provider_exception_records_failed_result_without_score(
+    git_repo: dict[str, object], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(store.ENV_DATA_DIR, str(tmp_path / "data"))
+    url, commit = _live_url_commit(git_repo)
+    outcome = executor.run_assessment(
+        repository_url=url,
+        commit=commit,
+        mode="live",
+        provider=MockProvider(exc=ProviderError("upstream exploded")),
+    )
+    assert outcome.result["status"] == "failed"
+    assert outcome.result["error"]["kind"] == "provider_error"
+    assert outcome.result["scoring"] is None
+    assert outcome.result["assessment"] is None
+
+
+def test_provider_timeout_records_failed_result_without_score(
+    git_repo: dict[str, object], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A provider timeout terminates as a recorded failure; never a score."""
+    monkeypatch.setenv(store.ENV_DATA_DIR, str(tmp_path / "data"))
+    url, commit = _live_url_commit(git_repo)
+    outcome = executor.run_assessment(
+        repository_url=url,
+        commit=commit,
+        mode="live",
+        provider=MockProvider(exc=TimeoutError("The read operation timed out")),
+    )
+    assert outcome.result["status"] == "failed"
+    assert outcome.result["error"]["kind"] == "provider_error"
+    assert "timed out" in outcome.result["error"]["message"]
+    assert outcome.result["scoring"] is None
+
+
+def test_error_responses_never_leak_credentials(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(store.ENV_DATA_DIR, str(tmp_path / "data"))
+    missing = (tmp_path / "no-such-repository").as_uri()
+    responses = [
+        client.post("/api/assess", json={"repository_url": missing, "mode": "live"}),
+        client.post("/api/assess", json={"repository_url": "not-a-url", "mode": "live"}),
+    ]
+    for response in responses:
+        text = response.text
+        for name, value in FAKE_KEYS.items():
+            assert name not in text
+            assert value not in text
+        assert "authorization" not in text.lower()
+        assert "bearer " not in text.lower()
+        assert "sk-" not in text
+        assert "traceback" not in text.lower()

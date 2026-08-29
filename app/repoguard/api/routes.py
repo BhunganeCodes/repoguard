@@ -22,7 +22,7 @@ import re
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel
 
 from evaluation.snapshot.commits import normalize_sha
@@ -49,24 +49,60 @@ class AssessRequest(BaseModel):
     mode: Literal["live", "demo"] = "live"
 
 
+def _product_error(
+    status_code: int,
+    code: str,
+    message: str,
+    *,
+    details: list[str] | None = None,
+) -> HTTPException:
+    """A stable, structured client-facing error.
+
+    The body follows FastAPI's existing ``detail`` field but carries a
+    machine-readable ``error`` code and a human ``message`` so the UI can
+    classify failures without parsing prose or leaking internals.
+    """
+    payload: dict[str, Any] = {"error": code, "message": message}
+    if details:
+        payload["details"] = list(details)
+    return HTTPException(status_code=status_code, detail=payload)
+
+
 def _validate_repository_url(repository_url: str) -> str:
     normalized = repository_url.strip()
     if not normalized:
-        raise HTTPException(status_code=400, detail="repository_url must not be empty")
+        raise _product_error(
+            400,
+            executor.ERROR_REPOSITORY_INVALID,
+            "repository_url must not be empty",
+        )
     try:
         parts = urlsplit(normalized)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=f"invalid repository URL: {exc}") from exc
+        raise _product_error(
+            400,
+            executor.ERROR_REPOSITORY_INVALID,
+            f"invalid repository URL: {exc}",
+        ) from exc
     scheme = parts.scheme.lower()
     if scheme not in _ALLOWED_SCHEMES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"unsupported URL scheme {scheme!r}; expected http, https, or file",
+        raise _product_error(
+            400,
+            executor.ERROR_REPOSITORY_INVALID,
+            f"unsupported URL scheme {scheme!r}; expected http, https, or file",
         )
     if scheme in ("http", "https") and not parts.netloc:
-        raise HTTPException(status_code=400, detail="repository URL is missing a host")
+        raise _product_error(
+            400,
+            executor.ERROR_REPOSITORY_INVALID,
+            "repository URL is missing a host",
+        )
     if scheme == "file" and not parts.path:
-        raise HTTPException(status_code=400, detail="repository URL is missing a path")
+        raise _product_error(
+            400,
+            executor.ERROR_REPOSITORY_INVALID,
+            "repository URL is missing a path",
+        )
     return normalized
 
 
@@ -74,7 +110,11 @@ def _normalize_commit(commit: str) -> str:
     try:
         return normalize_sha(commit)
     except InvalidShaError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise _product_error(
+            400,
+            executor.ERROR_REPOSITORY_INVALID,
+            str(exc),
+        ) from exc
 
 
 def _load_digest(assessment_id: str) -> str:
@@ -100,9 +140,9 @@ def create_assessment(payload: AssessRequest) -> dict[str, Any]:
             mode=payload.mode,
         )
     except executor.AssessmentInputError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise _product_error(400, exc.code, exc.message, details=exc.details) from exc
     except executor.AssessmentExecutionError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise _product_error(502, exc.code, exc.message, details=exc.details) from exc
     return {
         "assessment_id": outcome.identity,
         "mode": outcome.mode,
@@ -151,3 +191,23 @@ def get_assessment_report(assessment_id: str) -> dict[str, Any]:
         "assessment_id": result.get("result_identity"),
         "report": result,
     }
+
+
+@router.get("/assess/{assessment_id}/download")
+def download_assessment_artifact(assessment_id: str) -> Response:
+    """Download the canonical assessment artifact exactly as persisted.
+
+    The response streams the stored YAML bytes unchanged (already serialized
+    through the framework's secret-masking machinery); nothing is re-composed
+    or mutated on the way out.
+    """
+    digest = _load_digest(assessment_id)
+    try:
+        body = store.result_path(digest).read_bytes()
+    except OSError:
+        raise _not_found() from None
+    return Response(
+        content=body,
+        media_type="application/x-yaml",
+        headers={"Content-Disposition": f'attachment; filename="{digest}.yaml"'},
+    )
