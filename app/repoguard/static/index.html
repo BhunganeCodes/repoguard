@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RepoGuard — Evidence-backed repository engineering assessment</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <span class="logo">RepoGuard</span>
+      <span class="tagline">Evidence-backed repository engineering assessment</span>
+      <span id="demoPill" class="pill hidden">DEMO</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="assessForm" class="card">
+      <h1>Assess a repository</h1>
+      <p class="muted">
+        A snapshot is pinned, evidence is extracted and verified, and RepoGuard
+        produces an evidence-first assessment across the five engineering
+        dimensions.
+      </p>
+      <form id="assess-form">
+        <label for="repository_url">Repository URL</label>
+        <input id="repository_url" type="url" name="repository_url" required
+               placeholder="https://github.com/org/repository" autocomplete="off">
+
+        <div class="grid-2">
+          <div>
+            <label for="commit">Commit (optional — default branch is pinned)</label>
+            <input id="commit" type="text" name="commit" placeholder="40-character commit SHA"
+                   autocomplete="off" spellcheck="false">
+          </div>
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode" name="mode">
+              <option value="demo">Demo (synthetic, deterministic)</option>
+              <option value="live">Live (real snapshot + model)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="submit-btn" type="submit">Assess</button>
+          <button id="demo-btn" type="button" class="secondary">Try the demo</button>
+        </div>
+      </form>
+      <div id="form-error" class="error hidden"></div>
+    </section>
+
+    <section id="progress" class="card hidden">
+      <h2>Assessment in progress</h2>
+      <p class="muted" id="progress-note">Running the assessment pipeline…</p>
+      <ol id="lifecycle" class="lifecycle">
+        <li>queued</li>
+        <li>snapshotting</li>
+        <li>extracting</li>
+        <li>assessing</li>
+        <li>scoring</li>
+        <li>completed / failed</li>
+      </ol>
+    </section>
+
+    <section id="result" class="hidden"></section>
+    <section id="failure" class="hidden"></section>
+  </main>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

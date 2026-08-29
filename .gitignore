@@ -39,6 +39,13 @@ htmlcov/
 
 # Local evaluation outputs
 evaluation/results/local/
+evaluation/results/benchmark/
+evaluation/results/metrics/
+evaluation/snapshots/
+evaluation/ground_truth/local/
+
+# Product interface runtime store
+data/
 
 # Secrets
 credentials/
