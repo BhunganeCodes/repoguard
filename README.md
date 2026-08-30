@@ -288,6 +288,218 @@ data/                 runtime product store (gitignored)
 * `docs/evidence-extraction.md`, `docs/snapshot-acquisition.md` — evidence
 * `docs/ground-truth.md`, `docs/metrics.md`, `docs/benchmark-runner.md` — evaluation layers
 
+## Tools & AI-Assisted Development
+
+RepoGuard was built with a deliberate, transparent engineering workflow that
+combined conventional engineering tooling with AI-assisted development. This
+section documents what was used and how — the same information a judge needs
+to evaluate the engineering process behind the prototype.
+
+Every AI tool described here was a **development aid**. None of them are
+required to run RepoGuard.
+
+```text
+IDE / Terminal
+     │
+     ├── Human developer
+     │      └── direction, review, acceptance
+     │
+     ├── ChatGPT
+     │      └── architecture, reasoning, debugging,
+     │          planning, documentation
+     │
+     └── OpenCode
+            └── repository implementation, tests,
+                verification, Git operations
+```
+
+The workflow deliberately separated:
+
+```text
+Reasoning / planning
+        ↓
+Implementation
+        ↓
+Verification
+        ↓
+Human acceptance
+```
+
+### ChatGPT — Architecture, reasoning & engineering partner
+
+ChatGPT was used as a senior engineering and reasoning partner throughout the
+project. Its role was to **reason with the developer**, not to act on the
+repository directly. That included:
+
+* system architecture discussions;
+* decomposition of the project into implementation issues;
+* software design reasoning;
+* evaluation-engine design discussions;
+* API and product architecture review;
+* debugging and diagnosis;
+* interpreting test failures and runtime failures;
+* reasoning about provider/model behavior;
+* security and failure-mode analysis;
+* reviewing implementation reports;
+* designing verification procedures;
+* preparing documentation and submission material;
+* maintaining the overall engineering narrative and project continuity.
+
+ChatGPT did not modify repository files directly; the developer directed and
+reviewed its work, and implementation was carried out against the repository
+by OpenCode (below).
+
+> ChatGPT is not a runtime dependency of RepoGuard.
+
+### OpenCode — Implementation & repository execution agent
+
+OpenCode is the implementation agent and coding execution environment that
+operated against the repository to turn agreed designs and scoped issues into
+committed code. Its responsibilities included:
+
+* inspecting the repository and its conventions;
+* implementing scoped GitHub issues;
+* editing source files;
+* writing and extending tests;
+* running pytest, Ruff, mypy, and Node `--check`;
+* running Docker builds and verification;
+* executing API/product smoke tests;
+* checking Git diffs and repository isolation;
+* creating feature branches;
+* committing completed issues;
+* pushing approved branches to GitHub; and
+* producing implementation and verification reports.
+
+Because every step was inspected, reviewed, and approved by the developer
+before it was committed, OpenCode was a **development tool**, not a product
+dependency — RepoGuard does not require it to run.
+
+### Human developer — Direction, review & acceptance
+
+The human developer remained responsible for the project throughout:
+
+* project direction;
+* architectural decisions;
+* scope approval;
+* issue sequencing;
+* reviewing implementation and verification reports;
+* deciding when changes could be committed;
+* approving pushes;
+* evaluating trade-offs; and
+* final submission decisions.
+
+> AI accelerated implementation and reasoning, while the developer retained
+> architectural ownership, review authority, and acceptance responsibility.
+
+### AI-assisted workflow
+
+```text
+Human + ChatGPT
+        ↓
+Architecture / reasoning / task definition
+        ↓
+OpenCode
+        ↓
+Implementation + tests + verification
+        ↓
+Git branch / commit
+        ↓
+GitHub
+```
+
+This separation is deliberate: reasoning and planning, implementation,
+automated verification, and human acceptance are distinct stages — controlled
+AI-assisted engineering rather than blind code generation.
+
+### External AI provider experiments
+
+The evaluation engine isolates every LLM behind a provider abstraction
+(`evaluation/baseline/provider.py`, `evaluation/repoguard/provider.py`).
+During development several OpenAI-compatible endpoints were investigated as
+**Live**-provider candidates. These were experiments — they are not
+dependencies, they are not required for the Demo, and none of their outputs
+were treated as benchmark evidence.
+
+* **Ollama (local model experimentation).** Used to investigate local
+  OpenAI-compatible inference and to test whether the provider abstraction
+  could operate against a local model. Models tried included
+  `chevalblanc/gpt-4o-mini:latest` and `qwen2.5-coder:7b`. Outcome: the Ollama
+  endpoint and the provider plumbing worked, but
+  `chevalblanc/gpt-4o-mini:latest` produced structurally invalid assessment
+  output and `qwen2.5-coder:7b` exceeded the 600-second CPU timeout. These
+  results were therefore **not treated as benchmark evidence**.
+* **Google Gemini (external provider experimentation).** Models investigated:
+  `gemini-2.5-pro` and `gemini-3.1-pro-preview`. `gemini-2.5-pro` was not
+  available to the API key; `gemini-3.1-pro-preview` resolved correctly but
+  returned HTTP 429 quota/rate-limit responses.
+* **OpenRouter (external provider experimentation).** Connectivity and
+  authentication worked against `https://openrouter.ai/api/v1`. The free-tier
+  model `z-ai/glm-5.2:free` returned HTTP 429 rate-limit/quota responses.
+* **GLM models.** Newer GLM models were investigated as potential alternatives
+  for Live/agentic workflows (through the external provider experiments
+  above), but they were **not made a dependency** of the submission Demo. No
+  paid cloud model is required to reproduce RepoGuard.
+
+None of the above providers are required by the Demo. The Demo uses the
+deterministic in-process Demo provider and never contacts any external model.
+
+### Development AI vs runtime AI
+
+| Tool                    | Role                                              | Required to run Demo? |
+| ----------------------- | ------------------------------------------------- | --------------------- |
+| ChatGPT                 | Architecture, reasoning, debugging, documentation | No                    |
+| OpenCode                | Implementation and repository execution           | No                    |
+| Ollama                  | Local model/provider experimentation              | No                    |
+| Gemini                  | External Live-provider experimentation            | No                    |
+| OpenRouter              | External provider experimentation                 | No                    |
+| External LLM API        | Optional Live Assessment provider                 | No                    |
+| RepoGuard Demo provider | Deterministic local Demo                          | **Yes**               |
+
+> **RepoGuard's reproducible Demo does not require ChatGPT, OpenCode, Ollama,
+> Gemini, OpenRouter, an API key, or external network access.**
+
+### Conventional engineering tools
+
+* **Language / runtime** — Python (evaluation engine, API, UI backend),
+  JavaScript / HTML / CSS (dependency-free UI), Node.js (JS syntax checks).
+* **Application** — FastAPI (HTTP API), Uvicorn (ASGI server).
+* **Testing / quality** — pytest (unit + API suites), Ruff (lint + format),
+  mypy (static typing), Node `--check` (JS syntax).
+* **Packaging / deployment** — Docker and Docker Compose (container image and
+  compose workflow).
+* **Version control** — Git, GitHub, feature branches, and pull requests
+  (each issue was implemented on its own `feature/<description>` branch and
+  merged after review).
+
+### AI/provider architecture
+
+External AI providers are deliberately isolated behind the provider
+abstraction:
+
+```text
+                    ┌────────────────────┐
+                    │     RepoGuard      │
+                    │   Evaluation Core  │
+                    └─────────┬──────────┘
+                              │
+                       Provider abstraction
+                              │
+             ┌────────────────┼────────────────┐
+             │                │                │
+        Demo/Mock          Ollama       OpenAI-compatible
+        provider           local        external provider
+             │                │                │
+        deterministic     optional       optional Live
+```
+
+Demo uses the deterministic provider. Live can use a configured provider
+(external or local). External models do not change RepoGuard's scoring rules:
+the model **proposes** an assessment, the evaluation engine **validates** it
+(schema, case binding, evidence identity, citations, rubric compatibility,
+completeness, deterministic cross-check), and RepoGuard **performs the
+deterministic scoring**. This is one of the central architectural ideas of the
+project.
+
 ## Status
 
 Active development for a hackathon submission. The evaluation engine, frozen
