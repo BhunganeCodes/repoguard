@@ -46,8 +46,8 @@ docker compose up --build     # builds the image and serves on :8000
 * Hash of the image import path: `repoguard.main:app`, port `8000`.
 
 > Note: if another service already listens on `:8000`, start this container on
-> another host port, e.g.
-> `docker run -p 8015:8000 repoguard-api`.
+> another host port, e.g. `docker run -p 8015:8000 repoguard`.
+> Docker image name: `repoguard` (build with `docker build -t repoguard .`).
 
 ## API
 
@@ -242,6 +242,54 @@ benchmark evidence**.
    data or secrets. Run the container with no environment variables and verify
    health, a repeated Demo, and identical identities as above.
 
+## Hackathon Demo Procedure
+
+A judge-friendly walkthrough, doable from a fresh checkout in about three
+minutes. Everything below is offline and keyless.
+
+1. **Start the application.** `docker compose up --build` (recommended) or
+   `.\scripts\run.ps1` (or `./scripts/run.sh`).
+2. **Open the UI** at `http://127.0.0.1:8000/` (use another host port if 8000
+   is taken).
+3. **Click "Try Demo"** (or select **Demo** mode and submit any URL). No
+   credentials, no network, no external LLM.
+4. **Wait for assessment completion** — a few seconds at most. The running
+   card is an honest indeterminate indicator; the interface is synchronous.
+5. **Show the scorecard** — a DEMO ASSESSMENT at **63.0 / 100**.
+6. **Explain the five dimensions** — Architecture, Testing, Maintainability,
+   Dependencies, Documentation — each with `earned / maximum` (20) from the
+   canonical assessment.
+7. **Open findings** — 25 criteria rows, each with a canonical status
+   (`FOUND` / `NOT_FOUND` / `UNCERTAIN`), an integer score, and citations.
+8. **Click an evidence citation** — the Evidence section opens (if collapsed),
+   scrolls to the cited row, and highlights it (outline + inset bar, focus
+   moved for keyboard/screen-reader users).
+9. **Show the corresponding evidence row** — evidence id, category, status,
+   source paths, and the raw observation the finding cited.
+10. **Open the Audit trail** — the collapsible section with reproducibility
+    metadata: case id (`DEMO001`), repository, requested/verified commit,
+    snapshot content hash, evidence identity, rubric version
+    (`1.0`), assessment identity, result identity, RepoGuard/prompt versions,
+    provider (`mock`), runtime facts, and the workflow trace.
+11. **Show why the result is deterministic** — same inputs + same model output
+    ⇒ same score and same content-addressed identity; runtime metadata is
+    excluded. Re-submitting Demo reproduces `63.0` and the identical
+    `repoguard-v1:` identity.
+12. **Download the canonical artifact** — follow the Audit trail's download
+    link (`GET /api/assess/{id}/download`): the exact persisted YAML,
+    identity-bearing, secret-masked.
+13. **Explain the pipeline** — LOAD → PLAN → ASSESS → CROSS-CHECK → FINALIZE,
+    with deterministic evidence cross-checking and fail-closed validation;
+    the UI merely renders the artifact and never computes a score.
+14. **Mention Live mode** — optional: snapshots a real repository and calls a
+    configured provider; requires `REPOGUARD_LLM_PROVIDER` + credentials +
+    network, may take minutes, and fails closed (never a score) on provider
+    failure.
+
+Docker note: `docker compose up --build` maps `8000:8000` and bind-mounts
+`app/` and `data/`. For a host-port override:
+`docker run -p 8015:8000 repoguard` (build with `docker build -t repoguard .`).
+
 ## Live mode
 
 `mode=live`:
@@ -342,16 +390,20 @@ python -m mypy app evaluation
 docker compose up --build     # then GET /health returns {"status":"healthy"}
 ```
 
-Coverage of the product layer (`tests/api/test_product_api.py`):
+Coverage of the product layer (`tests/api/`):
 
-* demo end-to-end success + determinism,
+* demo end-to-end success + determinism (`test_product_api.py`),
+* clean-environment Demo determinism, ambient-provider isolation, and
+  no-HTTP-provider guards (`test_demo_reproducibility.py`),
 * all lookup endpoints and id normalization (full identity vs bare digest),
 * 404s for unknown/traversal/malformed ids,
 * invalid URL schemes, missing host, malformed commits → 400,
 * no secret material (deliberately-set fake keys) leaks in any response,
 * live mode: real snapshot + extraction wiring and fail-closed recorded
   results,
-* live mode success through the executor against a real local checkout.
+* live mode success through the executor against a real local checkout,
+* static UI lifecycle, scorecard/failure rendering, and evidence/audit
+  surfaces (`test_static_*`).
 
 ## File map
 
